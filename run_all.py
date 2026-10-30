@@ -38,6 +38,8 @@ def pipeline_steps(skip_validation):
     from engine.clean_data import clean_all
     from engine.detect_faults import detect_all
     from engine.expected_model import build_expected_table
+    from engine.fault_classifier import train_fault_classifier
+    from engine.model_updates import run_model_updates
     from engine.explore_data import explore
     from engine.losses import compute_losses
     from engine.energy_breakdown import compute_breakdown
@@ -52,10 +54,12 @@ def pipeline_steps(skip_validation):
              ("5. Fault detection (with the sky for every alert)", detect_all),
              ("6. Unusual-day score (optional hint)", anomaly_score),
              ("7. Energy and money losses", compute_losses),
-             ("8. Energy waterfall: natural vs fixable losses", compute_breakdown)]
+             ("8. Energy waterfall: natural vs fixable losses", compute_breakdown),
+             ("9. AI fault classifier (second opinion on every alert)", train_fault_classifier),
+             ("10. Self-updating model test (retrain daily vs once)", run_model_updates)]
     if not skip_validation:
-        steps += [("9. Validation with injected faults", validate),
-                  ("10. Weather-aware detection: before/after test", validate_weather)]
+        steps += [("11. Validation with injected faults", validate),
+                  ("12. Weather-aware detection: before/after test", validate_weather)]
     return steps
 
 

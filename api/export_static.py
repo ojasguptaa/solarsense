@@ -70,7 +70,7 @@ def export(out):
         client.post("/api/login", json={"username": "exporter", "password": "export-only"})
         ex = Exporter(client, out)
         info = ex.save("plants")
-        for name in ["validation", "assumptions", "settings"]:
+        for name in ["validation", "assumptions", "settings", "ai_models"]:
             ex.save(name)
         everything = ex.save("alerts", {"sort": "severity"})          # Alerts page
         for alert in everything["alerts"]:

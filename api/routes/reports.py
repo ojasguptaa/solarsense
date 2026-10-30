@@ -50,6 +50,14 @@ def validation():
     return get_store().metrics.get("validation", {})
 
 
+@router.get("/ai_models")
+def ai_models():
+    """Results of our trained models: expected output, fault classifier and the daily-retraining test."""
+    metrics = get_store().metrics
+    return {"expected_model": metrics.get("expected_model", {}), "fault_classifier": metrics.get("fault_classifier"),
+            "model_updates": metrics.get("model_updates")}
+
+
 @router.get("/assumptions", response_model=list[Assumption])
 def assumptions():
     """Every assumption we made, with its value, reason and source."""

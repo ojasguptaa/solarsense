@@ -1405,5 +1405,543 @@
     "false_alarms_after": 35,
     "rule_enabled_in_config": false,
     "verdict": "DO NOT KEEP the weather-aware rule: false alarms on clean test days 59 \u2192 35 (default + sensitive thresholds), injected faults lost: 13."
+  },
+  "fault_classifier": {
+    "method": "Random Forest classifier trained on faults we planted into healthy inverter-days (early days), tested on planted faults from later days it never saw.",
+    "classes": [
+      "healthy",
+      "trip",
+      "underperformance",
+      "data_gap",
+      "soiling",
+      "overheating"
+    ],
+    "train_examples": 9276,
+    "test_examples": 4272,
+    "test_accuracy_pct": 98.9,
+    "by_class": {
+      "healthy": {
+        "examples": 712,
+        "recall_pct": 99.6,
+        "precision_pct": 97.9
+      },
+      "trip": {
+        "examples": 712,
+        "recall_pct": 100.0,
+        "precision_pct": 100.0
+      },
+      "underperformance": {
+        "examples": 712,
+        "recall_pct": 99.7,
+        "precision_pct": 95.8
+      },
+      "data_gap": {
+        "examples": 712,
+        "recall_pct": 100.0,
+        "precision_pct": 100.0
+      },
+      "soiling": {
+        "examples": 712,
+        "recall_pct": 100.0,
+        "precision_pct": 100.0
+      },
+      "overheating": {
+        "examples": 712,
+        "recall_pct": 94.2,
+        "precision_pct": 100.0
+      }
+    },
+    "confusion_matrix": {
+      "rows_are": "planted fault",
+      "columns_are": "AI said",
+      "labels": [
+        "healthy",
+        "trip",
+        "underperformance",
+        "data_gap",
+        "soiling",
+        "overheating"
+      ],
+      "counts": [
+        [
+          709,
+          0,
+          3,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          712,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          710,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          712,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          712,
+          0
+        ],
+        [
+          13,
+          0,
+          28,
+          0,
+          0,
+          671
+        ]
+      ]
+    },
+    "feature_importance": {
+      "mean_ratio": 0.184,
+      "temp_rise_c": 0.141,
+      "duration_hours": 0.14,
+      "peer_ratio": 0.14,
+      "min_ratio": 0.112,
+      "zero_share": 0.1,
+      "ratio_spread": 0.094,
+      "start_hour": 0.047,
+      "missing_share": 0.033,
+      "mean_sun": 0.008,
+      "plant_ratio": 0.002
+    },
+    "real_alerts": {
+      "alerts_checked": 424,
+      "agree_pct": 98.3,
+      "agree_pct_by_type": {
+        "DATA_GAP": 100.0,
+        "INVERTER_TRIP": 100.0,
+        "UNDERPERFORMANCE": 56.2
+      }
+    },
+    "caveat": "Trained and tested on planted faults: real faults can look messier. The AI diagnosis is a second opinion; the rule-based detector still decides which alerts are raised."
+  },
+  "model_updates": {
+    "method": "Both models start from the first 10 days. Each later day is predicted before the model sees it; the retrained model then learns that day too.",
+    "by_plant": {
+      "plant_1": {
+        "avg_error_trained_once_pct": 6.72,
+        "avg_error_retrained_pct": 6.28,
+        "error_reduction_pct": 6.6,
+        "last_7_days_error_trained_once_pct": 5.93,
+        "last_7_days_error_retrained_pct": 5.03,
+        "days": [
+          {
+            "date": "2020-05-25",
+            "days_of_training": 10,
+            "trained_once_error_pct": 4.25,
+            "retrained_error_pct": 4.25,
+            "trained_once_r2": 0.9892,
+            "retrained_r2": 0.9892
+          },
+          {
+            "date": "2020-05-26",
+            "days_of_training": 11,
+            "trained_once_error_pct": 7.98,
+            "retrained_error_pct": 7.66,
+            "trained_once_r2": 0.9527,
+            "retrained_r2": 0.9546
+          },
+          {
+            "date": "2020-05-27",
+            "days_of_training": 12,
+            "trained_once_error_pct": 8.63,
+            "retrained_error_pct": 8.31,
+            "trained_once_r2": 0.9458,
+            "retrained_r2": 0.9463
+          },
+          {
+            "date": "2020-05-28",
+            "days_of_training": 13,
+            "trained_once_error_pct": 6.6,
+            "retrained_error_pct": 6.37,
+            "trained_once_r2": 0.9718,
+            "retrained_r2": 0.9723
+          },
+          {
+            "date": "2020-05-29",
+            "days_of_training": 14,
+            "trained_once_error_pct": 5.4,
+            "retrained_error_pct": 5.13,
+            "trained_once_r2": 0.9782,
+            "retrained_r2": 0.9803
+          },
+          {
+            "date": "2020-05-30",
+            "days_of_training": 15,
+            "trained_once_error_pct": 5.39,
+            "retrained_error_pct": 4.85,
+            "trained_once_r2": 0.9844,
+            "retrained_r2": 0.9867
+          },
+          {
+            "date": "2020-05-31",
+            "days_of_training": 16,
+            "trained_once_error_pct": 9.51,
+            "retrained_error_pct": 9.51,
+            "trained_once_r2": 0.9414,
+            "retrained_r2": 0.9422
+          },
+          {
+            "date": "2020-06-01",
+            "days_of_training": 17,
+            "trained_once_error_pct": 10.2,
+            "retrained_error_pct": 9.33,
+            "trained_once_r2": 0.9199,
+            "retrained_r2": 0.9306
+          },
+          {
+            "date": "2020-06-02",
+            "days_of_training": 18,
+            "trained_once_error_pct": 5.47,
+            "retrained_error_pct": 5.48,
+            "trained_once_r2": 0.9788,
+            "retrained_r2": 0.9788
+          },
+          {
+            "date": "2020-06-03",
+            "days_of_training": 19,
+            "trained_once_error_pct": 5.36,
+            "retrained_error_pct": 4.5,
+            "trained_once_r2": 0.9838,
+            "retrained_r2": 0.9876
+          },
+          {
+            "date": "2020-06-04",
+            "days_of_training": 20,
+            "trained_once_error_pct": 6.95,
+            "retrained_error_pct": 6.63,
+            "trained_once_r2": 0.9623,
+            "retrained_r2": 0.9647
+          },
+          {
+            "date": "2020-06-05",
+            "days_of_training": 21,
+            "trained_once_error_pct": 8.12,
+            "retrained_error_pct": 7.57,
+            "trained_once_r2": 0.9493,
+            "retrained_r2": 0.9628
+          },
+          {
+            "date": "2020-06-06",
+            "days_of_training": 22,
+            "trained_once_error_pct": 9.57,
+            "retrained_error_pct": 9.52,
+            "trained_once_r2": 0.946,
+            "retrained_r2": 0.9433
+          },
+          {
+            "date": "2020-06-07",
+            "days_of_training": 23,
+            "trained_once_error_pct": 6.73,
+            "retrained_error_pct": 6.63,
+            "trained_once_r2": 0.9473,
+            "retrained_r2": 0.9454
+          },
+          {
+            "date": "2020-06-08",
+            "days_of_training": 24,
+            "trained_once_error_pct": 6.62,
+            "retrained_error_pct": 6.86,
+            "trained_once_r2": 0.9709,
+            "retrained_r2": 0.9672
+          },
+          {
+            "date": "2020-06-09",
+            "days_of_training": 25,
+            "trained_once_error_pct": 6.17,
+            "retrained_error_pct": 5.86,
+            "trained_once_r2": 0.9677,
+            "retrained_r2": 0.9695
+          },
+          {
+            "date": "2020-06-10",
+            "days_of_training": 26,
+            "trained_once_error_pct": 6.91,
+            "retrained_error_pct": 7.07,
+            "trained_once_r2": 0.9738,
+            "retrained_r2": 0.9705
+          },
+          {
+            "date": "2020-06-11",
+            "days_of_training": 27,
+            "trained_once_error_pct": 5.62,
+            "retrained_error_pct": 4.25,
+            "trained_once_r2": 0.9811,
+            "retrained_r2": 0.9905
+          },
+          {
+            "date": "2020-06-12",
+            "days_of_training": 28,
+            "trained_once_error_pct": 5.61,
+            "retrained_error_pct": 3.38,
+            "trained_once_r2": 0.9808,
+            "retrained_r2": 0.993
+          },
+          {
+            "date": "2020-06-13",
+            "days_of_training": 29,
+            "trained_once_error_pct": 6.35,
+            "retrained_error_pct": 6.07,
+            "trained_once_r2": 0.9759,
+            "retrained_r2": 0.9758
+          },
+          {
+            "date": "2020-06-14",
+            "days_of_training": 30,
+            "trained_once_error_pct": 6.81,
+            "retrained_error_pct": 6.08,
+            "trained_once_r2": 0.957,
+            "retrained_r2": 0.958
+          },
+          {
+            "date": "2020-06-15",
+            "days_of_training": 31,
+            "trained_once_error_pct": 5.95,
+            "retrained_error_pct": 5.83,
+            "trained_once_r2": 0.97,
+            "retrained_r2": 0.9724
+          },
+          {
+            "date": "2020-06-16",
+            "days_of_training": 32,
+            "trained_once_error_pct": 5.3,
+            "retrained_error_pct": 4.78,
+            "trained_once_r2": 0.9805,
+            "retrained_r2": 0.9825
+          },
+          {
+            "date": "2020-06-17",
+            "days_of_training": 33,
+            "trained_once_error_pct": 5.86,
+            "retrained_error_pct": 4.82,
+            "trained_once_r2": 0.9831,
+            "retrained_r2": 0.9869
+          }
+        ]
+      },
+      "plant_2": {
+        "avg_error_trained_once_pct": 11.95,
+        "avg_error_retrained_pct": 11.75,
+        "error_reduction_pct": 1.6,
+        "last_7_days_error_trained_once_pct": 13.57,
+        "last_7_days_error_retrained_pct": 12.15,
+        "days": [
+          {
+            "date": "2020-05-25",
+            "days_of_training": 10,
+            "trained_once_error_pct": 5.19,
+            "retrained_error_pct": 5.19,
+            "trained_once_r2": 0.9611,
+            "retrained_r2": 0.9611
+          },
+          {
+            "date": "2020-05-26",
+            "days_of_training": 11,
+            "trained_once_error_pct": 5.73,
+            "retrained_error_pct": 5.39,
+            "trained_once_r2": 0.9725,
+            "retrained_r2": 0.9735
+          },
+          {
+            "date": "2020-05-27",
+            "days_of_training": 12,
+            "trained_once_error_pct": 5.66,
+            "retrained_error_pct": 4.84,
+            "trained_once_r2": 0.963,
+            "retrained_r2": 0.9672
+          },
+          {
+            "date": "2020-05-28",
+            "days_of_training": 13,
+            "trained_once_error_pct": 10.74,
+            "retrained_error_pct": 10.03,
+            "trained_once_r2": 0.8253,
+            "retrained_r2": 0.8268
+          },
+          {
+            "date": "2020-05-29",
+            "days_of_training": 14,
+            "trained_once_error_pct": 9.78,
+            "retrained_error_pct": 9.32,
+            "trained_once_r2": 0.8601,
+            "retrained_r2": 0.8653
+          },
+          {
+            "date": "2020-05-30",
+            "days_of_training": 15,
+            "trained_once_error_pct": 9.9,
+            "retrained_error_pct": 9.13,
+            "trained_once_r2": 0.8529,
+            "retrained_r2": 0.8628
+          },
+          {
+            "date": "2020-05-31",
+            "days_of_training": 16,
+            "trained_once_error_pct": 10.3,
+            "retrained_error_pct": 10.41,
+            "trained_once_r2": 0.9207,
+            "retrained_r2": 0.9239
+          },
+          {
+            "date": "2020-06-01",
+            "days_of_training": 17,
+            "trained_once_error_pct": 15.08,
+            "retrained_error_pct": 14.07,
+            "trained_once_r2": 0.8337,
+            "retrained_r2": 0.8776
+          },
+          {
+            "date": "2020-06-02",
+            "days_of_training": 18,
+            "trained_once_error_pct": 15.54,
+            "retrained_error_pct": 14.43,
+            "trained_once_r2": 0.6412,
+            "retrained_r2": 0.6889
+          },
+          {
+            "date": "2020-06-03",
+            "days_of_training": 19,
+            "trained_once_error_pct": 18.18,
+            "retrained_error_pct": 19.44,
+            "trained_once_r2": 0.5363,
+            "retrained_r2": 0.5232
+          },
+          {
+            "date": "2020-06-04",
+            "days_of_training": 20,
+            "trained_once_error_pct": 10.9,
+            "retrained_error_pct": 14.5,
+            "trained_once_r2": 0.9007,
+            "retrained_r2": 0.7528
+          },
+          {
+            "date": "2020-06-05",
+            "days_of_training": 21,
+            "trained_once_error_pct": 9.74,
+            "retrained_error_pct": 9.65,
+            "trained_once_r2": 0.9331,
+            "retrained_r2": 0.9332
+          },
+          {
+            "date": "2020-06-06",
+            "days_of_training": 22,
+            "trained_once_error_pct": 12.27,
+            "retrained_error_pct": 13.39,
+            "trained_once_r2": 0.8675,
+            "retrained_r2": 0.8394
+          },
+          {
+            "date": "2020-06-07",
+            "days_of_training": 23,
+            "trained_once_error_pct": 17.02,
+            "retrained_error_pct": 18.87,
+            "trained_once_r2": 0.7768,
+            "retrained_r2": 0.7246
+          },
+          {
+            "date": "2020-06-08",
+            "days_of_training": 24,
+            "trained_once_error_pct": 9.67,
+            "retrained_error_pct": 9.55,
+            "trained_once_r2": 0.9198,
+            "retrained_r2": 0.9182
+          },
+          {
+            "date": "2020-06-09",
+            "days_of_training": 25,
+            "trained_once_error_pct": 9.94,
+            "retrained_error_pct": 10.94,
+            "trained_once_r2": 0.8705,
+            "retrained_r2": 0.8391
+          },
+          {
+            "date": "2020-06-10",
+            "days_of_training": 26,
+            "trained_once_error_pct": 16.11,
+            "retrained_error_pct": 17.88,
+            "trained_once_r2": 0.7771,
+            "retrained_r2": 0.7471
+          },
+          {
+            "date": "2020-06-11",
+            "days_of_training": 27,
+            "trained_once_error_pct": 12.65,
+            "retrained_error_pct": 11.09,
+            "trained_once_r2": 0.8378,
+            "retrained_r2": 0.8303
+          },
+          {
+            "date": "2020-06-12",
+            "days_of_training": 28,
+            "trained_once_error_pct": 14.05,
+            "retrained_error_pct": 10.62,
+            "trained_once_r2": 0.7882,
+            "retrained_r2": 0.8453
+          },
+          {
+            "date": "2020-06-13",
+            "days_of_training": 29,
+            "trained_once_error_pct": 17.66,
+            "retrained_error_pct": 16.47,
+            "trained_once_r2": 0.6505,
+            "retrained_r2": 0.7662
+          },
+          {
+            "date": "2020-06-14",
+            "days_of_training": 30,
+            "trained_once_error_pct": 9.8,
+            "retrained_error_pct": 10.95,
+            "trained_once_r2": 0.884,
+            "retrained_r2": 0.8768
+          },
+          {
+            "date": "2020-06-15",
+            "days_of_training": 31,
+            "trained_once_error_pct": 14.37,
+            "retrained_error_pct": 14.56,
+            "trained_once_r2": 0.7956,
+            "retrained_r2": 0.7668
+          },
+          {
+            "date": "2020-06-16",
+            "days_of_training": 32,
+            "trained_once_error_pct": 10.26,
+            "retrained_error_pct": 10.27,
+            "trained_once_r2": 0.8983,
+            "retrained_r2": 0.895
+          },
+          {
+            "date": "2020-06-17",
+            "days_of_training": 33,
+            "trained_once_error_pct": 16.18,
+            "retrained_error_pct": 11.1,
+            "trained_once_r2": 0.7311,
+            "retrained_r2": 0.7847
+          }
+        ]
+      }
+    }
   }
 }

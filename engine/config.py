@@ -350,6 +350,32 @@ FAILED_LOGIN_DELAY_S = 0.5          # small pause after a wrong password slows d
 DEMO_USERS = {"operator": "solar123", "engineer": "solar123"}
 
 # ---------------------------------------------------------------------------
+# AI model 3: fault-type classifier (engine/fault_classifier.py)
+# ---------------------------------------------------------------------------
+# A Random Forest that learns what each fault LOOKS like from thousands of examples we plant ourselves
+# (trained on early days, tested on later days), then gives every real alert a second opinion.
+FAULT_CLASSIFIER_FILE = MODELS_DIR / "fault_classifier.joblib"
+CLASSIFIER_N_ESTIMATORS = 200
+CLASSIFIER_SAMPLES_PER_DAY = 2      # examples of EACH fault type planted per healthy inverter-day
+CLASSIFIER_WINDOW_HOURS = (1, 5)    # length of a planted fault (hours)
+CLASSIFIER_FAULT_SIZES = {          # how strong each planted fault is (fraction of output KEPT)
+    "underperformance_kept": (0.3, 0.8),
+    "soiling_kept": (0.85, 0.96),               # dust: a small loss over most of the day
+    "overheating_kept": (0.75, 0.92), "overheating_extra_temp_c": (12, 25),
+}
+# Our alert types -> the classifier's names (SENSOR_ISSUE is plant-wide, so no per-inverter shape)
+CLASSIFIER_TYPE_FOR_ALERT = {"INVERTER_TRIP": "trip", "UNDERPERFORMANCE": "underperformance",
+                             "DATA_GAP": "data_gap", "DEGRADATION": "soiling", "OVERHEATING": "overheating"}
+
+# ---------------------------------------------------------------------------
+# Self-updating model test (engine/model_updates.py)
+# ---------------------------------------------------------------------------
+# Real plants change (dust, ageing, season). We compare a model trained ONCE on the first days with one
+# RETRAINED every day on everything seen so far ("fine-tuned" on new data), each predicting the next day.
+UPDATES_FIRST_TRAIN_DAYS = 10       # both models start from the same first 10 days
+UPDATES_N_ESTIMATORS = 60           # smaller forest: it is retrained ~24 times per plant
+
+# ---------------------------------------------------------------------------
 # Chat assistant (engine/assistant.py) — Google Gemini, free tier
 # ---------------------------------------------------------------------------
 # The Gemini key is a SECRET (anyone with it can use our free quota), so it is never written in code.

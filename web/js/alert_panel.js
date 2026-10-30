@@ -13,6 +13,19 @@ const EVIDENCE_LABELS = {   // friendly names for evidence numbers (anything not
   avg_temp_delta_c: ["Panel hotter than air by", (v) => `${fmt.number(v, 1)} °C`],
 };
 
+const AI_NAMES = { trip: "Inverter trip", underperformance: "Underperformance", data_gap: "Data gap",
+  soiling: "Soiling / dust", overheating: "Overheating", healthy: "Looks healthy" };
+
+/** Second opinion from our trained fault classifier (AI model 3); the rules still raise the alert. */
+function aiDiagnosis(a) {
+  if (!a.ai_diagnosis) return "";
+  const verdict = a.ai_agrees ? `<span class="status Resolved">Agrees with the rules</span>`
+    : `<span class="status Open">Different view: worth a closer look</span>`;
+  return `<div class="weather-note"><strong>AI diagnosis:</strong> ${escapeHTML(AI_NAMES[a.ai_diagnosis] || a.ai_diagnosis)},
+    ${fmt.number(a.ai_confidence_pct)}% confident ${verdict}
+    ${infoTip("Our own Random Forest classifier, trained on thousands of planted faults. It reads the shape of the power curve and gives a second opinion.")}</div>`;
+}
+
 const AlertPanel = {
   onChange: null,
 
@@ -70,6 +83,7 @@ const AlertPanel = {
       ${a.weather_note ? `<div class="weather-note"><strong>Weather:</strong> ${a.sky_condition ? skyChip(a.sky_condition) : ""}
         ${a.module_temp_c === null || a.module_temp_c === undefined ? "" : ` · panels ${fmt.number(a.module_temp_c)} °C`}
         <div>${escapeHTML(a.weather_note)}</div></div>` : ""}
+      ${aiDiagnosis(a)}
       ${a.series_kind === "none" ? `<p class="muted">This is a plant-wide data issue — there is no power curve to show.</p>`
         : `<div class="chart-box small"><canvas id="evidence-chart" aria-label="Evidence chart"></canvas></div>`}
       <div class="facts">${lossFacts}${facts.join("")}</div>

@@ -91,6 +91,9 @@ class AlertSummary(BaseModel):
     avg_csi: Optional[float] = Field(None, description="Average clear-sky index during the alert (1 = clear).")
     module_temp_c: Optional[float] = Field(None, description="Average panel temperature during the alert, °C.")
     weather_note: Optional[str] = Field(None, description="One sentence on the weather during the alert.")
+    ai_diagnosis: Optional[str] = Field(None, description="Fault type the AI classifier thinks this is.")
+    ai_confidence_pct: Optional[float] = Field(None, description="How sure the classifier is (0-100).")
+    ai_agrees: Optional[bool] = Field(None, description="True when the AI agrees with the rule-based type.")
 
 
 class AlertsResponse(BaseModel):
