@@ -45,7 +45,7 @@ money (₹) lost — shown on a web dashboard that operators can act on.
 | **Alerts** | Filter/search/sort all alerts, "Why?" panel with evidence chart, Acknowledge / Resolve, CSV export |
 | **About** | How it works, data sources, assumptions, limitations, team |
 
-Also try **http://localhost:8000/docs** to see the API (log in on the website first — the API needs the session cookie).
+
 
 ## How it works (one minute)
 
