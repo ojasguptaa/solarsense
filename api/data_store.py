@@ -11,6 +11,7 @@ import pandas as pd
 from fastapi import HTTPException
 
 from engine import config
+from engine.energy_breakdown import power_per_sunlight_at_25c
 from engine.metrics import load_metrics
 
 STATUSES = ["Open", "Acknowledged", "Resolved"]
@@ -51,6 +52,8 @@ class DataStore:
             return
         self.weather_15min = pd.read_parquet(config.WEATHER_15MIN_FILE)
         self.weather_15min["date"] = self.weather_15min["date"].astype(str)   # same text dates as everywhere else
+        # kW per unit of sunlight at 25 °C — the live replay needs it to add up cloud loss tick by tick.
+        self.power_per_sunlight = power_per_sunlight_at_25c(self.weather_15min)
         self.weather_daily = pd.read_parquet(config.WEATHER_DAILY_FILE)
         self.breakdown = pd.read_parquet(config.ENERGY_BREAKDOWN_FILE)
         self.temperature_points = pd.read_parquet(config.TEMPERATURE_POINTS_FILE)

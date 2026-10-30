@@ -89,3 +89,14 @@ def test_replay_ticks_carry_sky_and_temperature(client):
     ticks = client.get("/api/replay", params={"plant": 1, "date": "2020-05-25"}).json()["ticks"]
     noon = [t for t in ticks if t["timestamp"].endswith("12:00:00")][0]
     assert noon["sky_label"] in config.SKY_LABELS and noon["module_temp_c"] > 25
+
+
+def test_replay_weather_and_fault_cost_end_at_the_days_totals(client):
+    """Live replay: weather cost and fault cost grow tick by tick and end on the Overview's day numbers."""
+    for plant, date in [(1, "2020-06-07"), (2, "2020-05-27")]:
+        ticks = client.get("/api/replay", params={"plant": plant, "date": date}).json()["ticks"]
+        day = client.get("/api/weather/day", params={"plant": plant, "date": date}).json()
+        natural = [t["natural_loss_kwh"] for t in ticks]
+        assert natural[0] < natural[-1]
+        assert natural[-1] == pytest.approx(day["natural_loss_kwh"], abs=0.2)
+        assert ticks[-1]["fault_loss_kwh"] == pytest.approx(day["fixable_loss_kwh"], abs=0.2)

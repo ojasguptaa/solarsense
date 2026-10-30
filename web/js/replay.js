@@ -1,8 +1,7 @@
 // Live replay on the Overview page: plays the chosen day in 15-minute ticks so the demo feels like
 // real-time monitoring. Every number comes precomputed from /api/replay — nothing is added up here.
 
-const TOAST_SECONDS = 6;
-const MAX_TOASTS = 3;
+const FINISH_HOLD_SECONDS = 3;   // after the last tick, the live fault list stays this long before the normal list returns
 
 const Replay = {
   data: null, tick: 0, timer: null, active: false,
@@ -18,6 +17,7 @@ const Replay = {
     Replay.active = true;
     Replay.tick = 0;
     Replay.setButtons(true);
+    Replay.clearAttention();
     // Draw the full-day chart frame once, then reveal it tick by tick.
     renderDayChart({ performance_ratio: null }, { points: Replay.data.ticks });
     Replay.play();
@@ -47,7 +47,6 @@ const Replay = {
     if (!Replay.active) return;
     Replay.active = false;
     Replay.setButtons(false);
-    document.getElementById("toasts").innerHTML = "";
     if (plant3d) plant3d.resetSun();
     if (restore && lastData) renderAll(lastData);
   },
@@ -59,11 +58,37 @@ const Replay = {
       Replay.timer = null;
       document.getElementById("replay-pause").hidden = true;
       document.getElementById("takeaway").textContent += " — replay finished.";
+      // Hold the live fault list a moment, then put the normal "Needs attention" list back.
+      const finished = Replay.data;
+      setTimeout(() => {
+        if (Replay.data === finished && !Replay.timer && lastData) renderAttention(lastData.attention);
+      }, FINISH_HOLD_SECONDS * 1000);
       return;
     }
     Replay.show(Replay.tick);
-    Replay.data.events.filter((e) => e.tick === Replay.tick).forEach(Replay.toast);
+    Replay.data.events.filter((e) => e.tick === Replay.tick).forEach(Replay.addAttention);
     Replay.tick += 1;
+  },
+
+  /** "Needs attention" during replay: starts empty, and each fault appears at the moment it starts. */
+  clearAttention() {
+    document.getElementById("attention-title").textContent = "Live: faults so far";
+    document.getElementById("attention-sub").textContent = "Each fault appears here the moment it starts in the replay, newest first.";
+    const list = document.getElementById("attention");
+    list.classList.add("live");
+    list.innerHTML = `<li class="empty">No faults yet — watching the plant…</li>`;
+  },
+
+  addAttention(event) {
+    const list = document.getElementById("attention");
+    list.querySelector(".empty")?.remove();
+    const where = event.inverter === "ALL" ? "Whole plant" : `Inverter ${escapeHTML(event.inverter)}`;
+    const item = document.createElement("li");
+    item.className = "live-new";
+    item.innerHTML = `<a href="alerts.html?id=${encodeURIComponent(event.id)}">
+        <div class="list-title">${severityBadge(event.severity)} ${fmt.fault(event.fault_type)}</div>
+        <div class="list-meta">${where} · started ${fmt.time(event.start)}</div></a>`;
+    list.prepend(item);
   },
 
   show(i) {
@@ -96,18 +121,13 @@ const Replay = {
     document.getElementById("wm-sky").textContent = t.sky_label || "too dark to judge";
     document.getElementById("wm-temp-label").textContent = "Panel temperature now";
     document.getElementById("wm-temp").textContent = t.module_temp_c === null ? "–" : `${fmt.number(t.module_temp_c)} °C`;
-  },
-
-  toast(event) {
-    const box = document.getElementById("toasts");
-    while (box.children.length >= MAX_TOASTS) box.firstChild.remove();
-    const toast = document.createElement("div");
-    toast.className = "toast";
-    toast.innerHTML = `<a href="alerts.html?id=${encodeURIComponent(event.id)}">
-      <div class="list-title">${severityBadge(event.severity)} New alert: ${fmt.fault(event.fault_type)}</div>
-      <div class="list-meta">${event.inverter === "ALL" ? "Whole plant" : `Inverter ${escapeHTML(event.inverter)}`} · ${escapeHTML(event.id)}</div></a>`;
-    box.appendChild(toast);
-    setTimeout(() => toast.remove(), TOAST_SECONDS * 1000);
+    // Weather vs fault cost grow with the graph; at the last tick they equal the day's totals.
+    if (t.natural_loss_kwh !== null && t.natural_loss_kwh !== undefined) {
+      document.getElementById("wm-natural-label").textContent = "Weather cost so far (natural)";
+      document.getElementById("wm-natural").textContent = fmt.kwh(t.natural_loss_kwh);
+    }
+    document.getElementById("wm-fixable-label").textContent = "Faults cost so far (fixable)";
+    document.getElementById("wm-fixable").textContent = fmt.kwh(t.fault_loss_kwh);
   },
 
   setButtons(playing) {

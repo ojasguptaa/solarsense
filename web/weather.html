@@ -55,12 +55,8 @@
           <span id="hot-threshold">50</span> °C).</p>
         <div class="chart-box small"><canvas id="temp-chart" aria-label="Air and panel temperature chart"></canvas></div>
       </div>
-      <div class="card">
-        <h2 id="scatter-title">Hotter panels make less power</h2>
-        <p class="card-sub">Healthy readings in good sunlight: efficiency (power ÷ sunlight) against panel temperature,
-          with a straight-line fit.</p>
-        <div class="chart-box small"><canvas id="scatter-chart" aria-label="Panel temperature vs efficiency chart"></canvas></div>
-      </div>
+      <!-- Verdict: was this day's loss bad luck (weather) or something to fix (faults)? -->
+      <div id="verdict" class="card verdict" aria-live="polite"><div class="skeleton"></div></div>
     </section>
 
     <section class="card" style="margin-top: var(--gap)">

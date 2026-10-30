@@ -81,8 +81,10 @@ function renderWeatherMini(weather) {
       <strong id="wm-sky">${escapeHTML(d.dominant_sky || "–")} · ${fmt.number(d.sunshine_score)}/100</strong></div>
     <div class="wm-stat"><span class="kpi-label" id="wm-temp-label">Hottest panel</span>
       <strong id="wm-temp">${fmt.number(d.max_module_c)} °C</strong></div>
-    <div class="wm-stat"><span class="kpi-label">Weather cost (natural)</span><strong>${fmt.kwh(weather.natural_loss_kwh)}</strong></div>
-    <div class="wm-stat"><span class="kpi-label">Faults cost (fixable)</span><strong>${fmt.kwh(weather.fixable_loss_kwh)}</strong></div>
+    <div class="wm-stat"><span class="kpi-label" id="wm-natural-label">Weather cost (natural)</span>
+      <strong id="wm-natural">${fmt.kwh(weather.natural_loss_kwh)}</strong></div>
+    <div class="wm-stat"><span class="kpi-label" id="wm-fixable-label">Faults cost (fixable)</span>
+      <strong id="wm-fixable">${fmt.kwh(weather.fixable_loss_kwh)}</strong></div>
     <a class="wm-link" href="weather.html">Weather & Energy →</a>`;
 }
 
@@ -135,6 +137,9 @@ function renderDayChart(overview, series, weather = null) {
 
 function renderAttention(attention) {
   const list = document.getElementById("attention");
+  list.classList.remove("live");
+  document.getElementById("attention-title").textContent = "Needs attention";   // the live replay changes these two
+  document.getElementById("attention-sub").textContent = "Open alerts on this day, most severe first.";
   if (!attention.alerts.length) {
     list.innerHTML = `<li class="empty">No open alerts on this day ✔</li>`;
     return;

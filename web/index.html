@@ -50,8 +50,8 @@
         <div class="chart-box"><canvas id="day-chart" aria-label="Actual vs expected power chart"></canvas></div>
       </div>
       <div class="card">
-        <h2>Needs attention</h2>
-        <p class="card-sub">Open alerts on this day, most severe first.</p>
+        <h2 id="attention-title">Needs attention</h2>
+        <p id="attention-sub" class="card-sub">Open alerts on this day, most severe first.</p>
         <ul id="attention" class="list"><li><div class="skeleton"></div></li></ul>
         <p><a id="all-alerts-link" href="alerts.html">See all alerts →</a></p>
       </div>
@@ -79,8 +79,6 @@
 
     <p class="footer-note">All numbers are computed by the SolarSense pipeline from the Kaggle "Solar Power Generation Data" (two plants in India, May–June 2020).</p>
   </main>
-
-  <div id="toasts" class="toasts" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="js/mode.js"></script>

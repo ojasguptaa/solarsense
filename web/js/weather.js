@@ -1,5 +1,5 @@
-// Weather & Energy page: the day's sky (read from sunlight), heat, the energy waterfall, the temperature
-// effect and a calendar of all days. Every number comes from the API — nothing is calculated here.
+// Weather & Energy page: the day's sky (read from sunlight), heat, the energy waterfall, a weather-or-plant
+// verdict and a calendar of all days. Every number comes from the API — nothing is calculated here.
 
 const WATERFALL_TIPS = {
   clear_sky_potential: "What the plant would make under a clear sky with panels at 25 °C.",
@@ -16,21 +16,21 @@ let waterfallMode = "day";
 async function loadWeather(state) {
   const { plant, date } = state;
   try {
-    const [day, calendar, temperature, period] = await Promise.all([
+    const [day, calendar, period, overview] = await Promise.all([
       fetchJSON("/api/weather/day", { plant, date }),
       fetchJSON("/api/weather/calendar", { plant }),
-      fetchJSON("/api/weather/temperature", { plant }),
       fetchJSON("/api/breakdown", { plant }),
+      fetchJSON("/api/overview", { plant, date }),
     ]);
     clearError();
-    weatherData = { day, calendar, temperature, period };
+    weatherData = { day, calendar, period, overview };
     renderWeather(weatherData);
   } catch (error) {
     showError(error.message);
   }
 }
 
-function renderWeather({ day, calendar, temperature, period }) {
+function renderWeather({ day, calendar, period, overview }) {
   document.getElementById("takeaway").textContent = day.takeaway;
   document.getElementById("hot-threshold").textContent = fmt.number(day.hot_module_temp_c);
   renderKpis(day);
@@ -39,7 +39,7 @@ function renderWeather({ day, calendar, temperature, period }) {
     ? { ...day, steps: day.waterfall, label: fmt.date(day.date), fixable_inr: day.day.fault_loss_inr }
     : { ...period, label: "Whole period", fixable_inr: period.fixable_loss_inr });
   renderTempChart(day);
-  renderScatter(temperature);
+  renderVerdict(day, overview);
   renderCalendar(calendar, day.date);
 }
 
@@ -123,13 +123,35 @@ function renderWaterfall({ steps, label, natural_loss_kwh: natural, fixable_loss
       ? `<span class="ws-callout"><strong>Fixable loss: ${fmt.kwh(s.kwh)} (${fmt.inr(fixable_inr)})</strong>
          caused by faults our alerts found</span>`
       : `<span class="ws-name">${names[s.part]}:</span> ${fmt.kwh(s.kwh)} <span class="ws-pct">${share}</span>`;
-    return `<div class="ws-row" style="flex-grow: ${Math.max(s.pct_of_potential, 4)}" title="${escapeHTML(tips[s.part])}">
+    return `<div class="ws-row ws-item" data-part="${s.part}" tabindex="0" style="flex-grow: ${Math.max(s.pct_of_potential, 4)}"
+        title="${escapeHTML(tips[s.part])}">
         <div class="ws-seg ws-${s.part}"></div><div class="ws-label ws-l-${s.part}"><span>${text}</span></div></div>`;
   }).join("");
-  document.getElementById("waterfall-stack").innerHTML = `
-    <div class="ws-top"><div class="ws-seg ws-potential"></div>
-      <div class="ws-label ws-l-potential">100% clear-sky potential (${fmt.kwh(potential.kwh)})</div></div>
+  const stack = document.getElementById("waterfall-stack");
+  stack.innerHTML = `
+    <div class="ws-top ws-item" data-part="potential" tabindex="0" title="${escapeHTML(WATERFALL_TIPS.clear_sky_potential)}">
+      <div class="ws-seg ws-potential"></div>
+      <div class="ws-label ws-l-potential"><span>100% clear-sky potential (${fmt.kwh(potential.kwh)})</span></div></div>
     <div class="ws-body">${rows}</div>`;
+  highlightSlice(stack, null);
+}
+
+/** Hover / tap / Tab on a slice (or its label): that slice pops out with a line to its label, the rest fade.
+ *  With nothing pointed at, the fixable (red) slice stays highlighted — it is the one that matters. */
+function highlightSlice(stack, item) {
+  const target = item || stack.querySelector('.ws-item[data-part="fault_loss"]');
+  stack.querySelectorAll(".ws-item").forEach((el) => el.classList.toggle("active", el === target));
+  stack.classList.toggle("has-active", Boolean(target));
+}
+
+function initWaterfallHover() {
+  const stack = document.getElementById("waterfall-stack");
+  const pick = (event) => highlightSlice(stack, event.target.closest(".ws-item"));
+  stack.addEventListener("pointerover", pick);
+  stack.addEventListener("focusin", pick);
+  stack.addEventListener("click", pick);   // phones: tap a slice to select it
+  stack.addEventListener("pointerleave", (event) => { if (event.pointerType === "mouse") highlightSlice(stack, null); });
+  stack.addEventListener("focusout", (event) => { if (!stack.contains(event.relatedTarget)) highlightSlice(stack, null); });
 }
 
 function renderTempChart(data) {
@@ -161,29 +183,32 @@ function renderTempChart(data) {
   });
 }
 
-function renderScatter(t) {
-  document.getElementById("scatter-title").textContent =
-    `Every +1 °C costs ~${fmt.number(Math.abs(t.coefficient_pct_per_c), 2)}% power (Plant ${t.plant})`;
-  const line = t.fit_line;
-  const lineAt = (temp) => line.efficiency_at_25c_pct + line.slope_pct_points_per_c * (temp - t.reference_panel_temp_c);
-  Charts.draw("scatter-chart", {
-    type: "scatter",
-    data: { datasets: [
-      { label: "Healthy readings", data: t.points.map((p) => ({ x: p.module_temp, y: p.efficiency_pct })),
-        backgroundColor: "rgba(37, 99, 235, 0.18)", pointRadius: 1.5 },
-      { label: "Average per 2 °C", data: t.binned.map((b) => ({ x: b.temp_c, y: b.efficiency_pct })),
-        backgroundColor: Charts.color("--accent"), pointRadius: 4 },
-      { type: "line", label: `Fitted line (${t.coefficient_pct_per_c} %/°C)`, borderColor: Charts.color("--bad"),
-        borderWidth: 2.5, pointRadius: 0, data: [line.temp_min_c, line.temp_max_c].map((x) => ({ x, y: lineAt(x) })) },
-    ] },
-    options: {
-      scales: { x: Charts.axis("Panel temperature (°C)", { type: "linear" }),
-                // Zoomed to 60–130% so the trend is visible (a few outlier readings fall outside).
-                y: Charts.axis("Efficiency (% of usual, zoomed)", { min: 60, max: 130 }) },
-      plugins: { tooltip: { callbacks: {
-        label: (ctx) => `${ctx.dataset.label}: ${fmt.number(ctx.parsed.x, 1)} °C → ${fmt.number(ctx.parsed.y, 1)}%` } } },
-    },
-  });
+/** Verdict card: was this day's loss bad luck (clouds + heat) or something to fix (faults)? Answers in one look. */
+function renderVerdict(day, overview) {
+  const natural = day.natural_loss_kwh, fixable = day.fixable_loss_kwh;
+  const inverters = overview.inverters_needing_attention;
+  const verdict = fixable <= 0
+    ? { css: "ok", title: "The weather: nothing to fix", line: "No energy was lost to faults on this day." }
+    : fixable >= natural
+      ? { css: "bad", title: "Mostly the plant: fix it", line: "Faults cost more than the weather did." }
+      : { css: "warn", title: "Mostly the weather", line: "But part of the loss is still fixable." };
+  const plural = inverters === 1 ? "inverter that needs" : "inverters that need";
+  const action = inverters > 0
+    ? `<a class="verdict-action" href="alerts.html?plant=${overview.plant}">See the ${fmt.number(inverters)} ${plural} attention →</a>`
+    : "";
+  document.getElementById("verdict").className = `card verdict ${verdict.css}`;
+  document.getElementById("verdict").innerHTML = `
+    <h2>Weather or the plant?</h2>
+    <p class="card-sub">What caused this day's lost energy, and is any of it ours to fix?</p>
+    <div class="verdict-title">${verdict.title}</div>
+    <p class="verdict-line">${verdict.line}</p>
+    <div class="verdict-split">
+      <div><span class="kpi-label">Weather (clouds + heat)</span><strong>${fmt.kwh(natural)}</strong>
+        <span class="verdict-note">natural · can't be fixed</span></div>
+      <div><span class="kpi-label">Faults</span><strong class="${fixable > 0 ? "fix" : ""}">${fmt.kwh(fixable)}</strong>
+        <span class="verdict-note">${fixable > 0 ? `${fmt.inr(day.day.fault_loss_inr)} · fixable` : "fixable · none today"}</span></div>
+    </div>
+    ${action}`;
 }
 
 function renderCalendar(calendar, selectedDate) {
@@ -217,6 +242,7 @@ function setWaterfallMode(mode) {
   if (weatherData) renderWeather(weatherData);
 }
 
+initWaterfallHover();
 document.getElementById("wf-day").addEventListener("click", () => setWaterfallMode("day"));
 document.getElementById("wf-period").addEventListener("click", () => setWaterfallMode("period"));
 window.addEventListener("themechange", () => { if (weatherData) renderWeather(weatherData); });

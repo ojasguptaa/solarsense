@@ -84,6 +84,8 @@ async def require_login(request: Request, call_next):
         response = await call_next(request)
         if path.endswith(".html") or path == "/":
             response.headers["Cache-Control"] = "no-store"   # Back button after logout must not show data
+        elif path.endswith((".js", ".css")):
+            response.headers["Cache-Control"] = "no-cache"   # always ask the server, so code changes show up at once
         return response
     if path.startswith("/api/"):
         return JSONResponse({"detail": "Please log in."}, status_code=401)
