@@ -65,22 +65,6 @@
       <p class="muted">The pipeline computes everything in advance; the website only displays results. The AI never decides alone: clear rules raise every alert and explain why.</p>
     </section>
 
-    <section class="card section" id="ai-models">
-      <h2>Our AI models (trained on the plant data)</h2>
-      <p class="card-sub">Three models we trained ourselves with scikit-learn. All are tested on days they never saw.</p>
-      <div class="grid kpis">
-        <div class="card kpi ok"><div class="kpi-label">1. Expected output (Random Forest)</div><div class="kpi-value" id="ai-r2">–</div><div class="kpi-compare">R² on unseen days, Plant 1: how much power the plant SHOULD make</div></div>
-        <div class="card kpi ok"><div class="kpi-label">2. Fault-type classifier (Random Forest)</div><div class="kpi-value" id="ai-acc">–</div><div class="kpi-compare" id="ai-acc-sub">accuracy on planted faults from later days</div></div>
-        <div class="card kpi ok"><div class="kpi-label">3. Retrained daily on new data</div><div class="kpi-value" id="ai-upd">–</div><div class="kpi-compare" id="ai-upd-sub">less error than a model trained once</div></div>
-      </div>
-      <h3>Classifier: what was planted vs what the AI said</h3>
-      <div class="table-wrap"><table id="ai-confusion"><tbody><tr><td><div class="skeleton"></div></td></tr></tbody></table></div>
-      <p class="muted small" id="ai-real"></p>
-      <h3>Retraining every day keeps the model sharp</h3>
-      <div class="chart-box small"><canvas id="ai-updates-chart" aria-label="Daily error: trained once vs retrained daily"></canvas></div>
-      <p class="muted small" id="ai-caveat"></p>
-    </section>
-
     <section class="card section">
       <h2>What it detects</h2>
       <div class="table-wrap">
@@ -164,11 +148,12 @@
 
     <section class="card section">
       <h2>Team</h2>
+      <p class="card-sub">Team name: <strong>Drona</strong></p>
       <div class="grid team">
-        <div class="member"><strong>[Name — TODO]</strong><span class="muted">P1 · Data &amp; problem</span></div>
-        <div class="member"><strong>[Name — TODO]</strong><span class="muted">P2 · AI model &amp; fault detection</span></div>
-        <div class="member"><strong>[Name — TODO]</strong><span class="muted">P3 · Losses, validation &amp; API</span></div>
-        <div class="member"><strong>[Name — TODO]</strong><span class="muted">P4 · Web dashboard &amp; pitch</span></div>
+        <div class="member"><strong>Aharshi K. Chakroborty</strong><span class="muted">Team Leader</span></div>
+        <div class="member"><strong>Ojas Gupta</strong><span class="muted">Member 2</span></div>
+        <div class="member"><strong>Lakshya Soni</strong><span class="muted">Member 3</span></div>
+        <div class="member"><strong>Aniket Verma</strong><span class="muted">Member 4</span></div>
       </div>
     </section>
   </main>
@@ -176,8 +161,6 @@
   <script src="js/mode.js"></script>
   <script src="js/api.js"></script>
   <script src="js/layout.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="js/ai_models.js"></script>
   <script src="js/about.js"></script>
 </body>
 </html>

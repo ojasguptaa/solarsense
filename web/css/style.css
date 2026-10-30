@@ -392,3 +392,32 @@ th.sortable:hover { color: var(--text); }
 .p3-open { color: var(--muted); margin-top: 4px; }
 .legend .l-off::before { background: #94a3b8; }
 @media (max-width: 640px) { .plant3d-view { height: 300px; } }
+
+/* ---------- Inverter page: maintenance work order ---------- */
+.job-card { display: flex; flex-direction: column; border-top: 4px solid var(--bad); }
+.job-card.ok { border-top-color: var(--ok); }
+.job-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.job-head h2 { margin: 0; }
+.job-priority { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+.job-card .card-sub { margin: 4px 0 12px; }
+.job-facts { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; margin: 0 0 14px; font-size: 13px; }
+.job-facts dt { color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; padding-top: 1px; }
+.job-facts dd { margin: 0; }
+.job-checks { display: flex; flex-direction: column; gap: 6px; padding: 12px; border: 1px dashed var(--border); border-radius: var(--radius); font-size: 13px; }
+.job-checks label { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
+.job-checks input { margin-top: 2px; accent-color: var(--ok); }
+.job-checks label:has(input:checked) { color: var(--muted); text-decoration: line-through; }
+.job-worth { margin-top: 14px; font-size: 14px; }
+.job-worth strong { color: var(--bad); }
+.job-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 16px; }
+.btn-whatsapp { display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 8px; background: #25d366; color: #fff;
+  font-weight: 600; font-size: 13px; text-decoration: none; }
+.btn-whatsapp:hover { background: #1ebe5b; }
+.job-none { margin: 12px 0 0; color: var(--ok); font-weight: 600; }
+/* Print button: print only the work order. */
+@media print {
+  body.print-job * { visibility: hidden; }
+  body.print-job #job-card, body.print-job #job-card * { visibility: visible; }
+  body.print-job #job-card { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none; border: 1px solid #999; }
+  body.print-job .job-buttons, body.print-job .info { display: none; }
+}

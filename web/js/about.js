@@ -53,4 +53,4 @@ async function loadHeadline(state) {
   }
 }
 
-Layout.init("about").then((state) => Promise.all([loadAbout(state), loadHeadline(state), loadAIModels()]));
+Layout.init("about").then((state) => Promise.all([loadAbout(state), loadHeadline(state)]));

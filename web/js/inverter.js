@@ -1,9 +1,8 @@
-// Inverter page: one inverter's day (actual vs expected vs peers, alerts shaded), its daily trend and its alerts.
+// Inverter page: one inverter's day (actual vs expected vs peers, alerts shaded), a maintenance work order and its alerts.
 
 const ALERT_SHADE = "rgba(239, 68, 68, 0.14)";
 let inverterId = new URLSearchParams(window.location.search).get("id");
 let lastInverterData = null;
-const sunlightCache = {};
 
 async function loadInverterPage(state) {
   try {
@@ -21,11 +20,6 @@ async function loadInverterPage(state) {
     clearError();
     lastInverterData = detail;
     renderInverter(detail);
-    // All-days readings for the power-vs-sunlight chart: fetched once per inverter, reused when the date changes.
-    if (!sunlightCache[inverterId]) {
-      sunlightCache[inverterId] = await fetchJSON(`/api/inverter/${encodeURIComponent(inverterId)}/sunlight`);
-    }
-    renderSunlightChart(sunlightCache[inverterId], detail.date);
   } catch (error) {
     showError(error.message);
   }
@@ -48,7 +42,7 @@ function renderInverter(detail) {
     <div class="card kpi ${today.fault_loss_kwh > 0 ? "bad" : "ok"}"><div class="kpi-label">Energy lost</div><div class="kpi-value">${fmt.number(today.fault_loss_kwh)}<span class="unit">kWh</span></div><div class="kpi-compare">${fmt.inr(today.fault_loss_inr)} (assumed tariff — <a href="about.html">see About</a>)</div></div>`;
 
   renderDayChart(detail, alertsToday);
-  renderPrChart(detail);
+  renderJobCard(detail);
   renderAlertList(detail);
 }
 
@@ -89,83 +83,122 @@ function renderDayChart(detail, alertsToday) {
   });
 }
 
-/** Power vs sunlight ("regression against irradiance"): the selected day in colour over all other days in grey. */
-function renderSunlightChart(sun, date) {
-  const pick = (today, alert) => sun.points.filter((p) => (p.d === date) === today && p.f === alert)
-    .map((p) => ({ x: p.s, y: p.a, e: p.e, d: p.d }));
-  const todayAlert = pick(true, true);
-  const r2 = sun.healthy_r2 === null ? "" : ` (R² ${fmt.number(sun.healthy_r2, 2)})`;
-  document.getElementById("sun-title").textContent = todayAlert.length
-    ? `${todayAlert.length} readings on ${fmt.date(date)} fell below the expected line during an alert`
-    : sun.readings_in_alerts
-      ? `Healthy readings follow the AI line${r2}; ${fmt.number(sun.readings_in_alerts)} readings fell below it during alerts`
-      : `All readings follow the AI line${r2}: no faults found on this inverter`;
-  document.getElementById("sun-sub").textContent = "Each dot is one 15-minute reading. The orange line is the power our "
-    + "AI model expects for that much sunlight"
-    + (sun.expected_at_full_sun_kw ? ` (about ${fmt.number(sun.expected_at_full_sun_kw)} kW in full sun)` : "")
-    + `. Coloured dots = ${fmt.date(date)}, grey = all other days. Dots far below the line are lost energy.`;
+// ---- Maintenance work order ----
 
-  const muted = Charts.color("--muted");
-  const dots = (label, data, color, radius) => ({ label, data, type: "scatter", backgroundColor: color,
-    borderColor: color, pointRadius: radius, pointHoverRadius: radius + 2 });
-  Charts.draw("sun-chart", {
-    type: "scatter",
-    data: {
-      datasets: [
-        { label: "AI expected power", type: "line", data: sun.expected_line.map((p) => ({ x: p.sunlight, y: p.expected_kw })),
-          borderColor: Charts.color("--chart-expected"), backgroundColor: Charts.color("--chart-expected"),
-          borderWidth: 3, pointRadius: 0, tension: 0.3, order: 0 },
-        dots("Selected day: during an alert", todayAlert, Charts.color("--bad"), 5),
-        dots("Selected day: normal", pick(true, false), Charts.color("--chart-actual"), 4),
-        dots("Other days: during an alert", pick(false, true), "rgba(220, 38, 38, 0.28)", 2.5),
-        dots("Other days: normal", pick(false, false), `${muted}40`, 2),
-      ],
-    },
-    options: {
-      interaction: { mode: "nearest", intersect: true },
-      scales: { x: Charts.axis("Sunlight (irradiation, kW/m²)", { type: "linear", min: 0 }),
-                y: Charts.axis("AC power (kW)", { beginAtZero: true }) },
-      plugins: {
-        tooltip: { callbacks: {
-          label: (ctx) => {
-            const p = ctx.raw;
-            if (p.e === undefined) return `AI expects ${fmt.number(p.y)} kW at ${fmt.number(p.x, 2)} kW/m²`;
-            const gap = p.e > 0 ? Math.round((1 - p.y / p.e) * 100) : 0;
-            return `${fmt.date(p.d)}: ${fmt.number(p.y)} kW made, ${fmt.number(p.e)} kW expected`
-              + (gap > 0 ? ` (${gap}% below)` : "");
-          },
-        } },
-      },
-    },
-  });
+/** What a technician should check for each fault type (expands the one-line recommended action). */
+const JOB_CHECKS = {
+  INVERTER_TRIP: ["Read the fault code on the inverter's display or event log",
+    "Check the AC breaker, isolator and grid connection", "Restart only if safe, then watch the next sunny hour"],
+  UNDERPERFORMANCE: ["Measure each string's current to find failed strings",
+    "Check connectors and string fuses for looseness or burn marks", "Look for new shading or heavy dirt on the panels"],
+  DEGRADATION: ["Clean the panels feeding this inverter", "Re-check output after cleaning; if it stays low, test the modules for ageing"],
+  OVERHEATING: ["Check ventilation around the inverter", "Run a thermal check for hotspots", "Test the cooling fans"],
+  DATA_GAP: ["Check the data logger's power and status lights", "Check the network cable / SIM link to this inverter",
+    "Compare with the energy meter to see if it kept producing"],
+  SENSOR_ISSUE: ["Recalibrate or replace the sensor / meter", "Fix the data logging settings"],
+};
+const HOT_PANEL_C = 50;   // trips with panels above this: check cooling first
+
+const median = (values) => {
+  const v = values.filter((x) => x !== null && x !== undefined).sort((a, b) => a - b);
+  return v.length ? v[Math.floor((v.length - 1) / 2)] : null;
+};
+const minutesOf = (iso) => Number(iso.slice(11, 13)) * 60 + Number(iso.slice(14, 16));
+const clock = (minutes) => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(Math.round(minutes % 60)).padStart(2, "0")}`;
+
+/** Everything on the work order, worked out from this inverter's alerts over the whole period. */
+function buildJob(detail) {
+  const alerts = detail.alerts, days = detail.daily_history.length || 1;
+  const open = alerts.filter((a) => a.status !== "Resolved");
+  const counts = {};
+  alerts.forEach((a) => { counts[a.fault_type] = (counts[a.fault_type] || 0) + 1; });
+  const types = Object.keys(counts).sort((x, y) => counts[y] - counts[x]);
+  const main = types[0];
+  const mainAlerts = alerts.filter((a) => a.fault_type === main);
+  const sameDay = mainAlerts.filter((a) => a.duration_hours <= 24);   // "usually 10:30–14:30" only makes sense within a day
+  const skies = {};
+  mainAlerts.forEach((a) => { if (a.sky_condition) skies[a.sky_condition] = (skies[a.sky_condition] || 0) + 1; });
+  const panel = median(mainAlerts.map((a) => a.module_temp_c));
+  const judged = alerts.filter((a) => a.ai_diagnosis);
+  const lost = alerts.reduce((sum, a) => sum + a.money_loss_inr, 0);
+  const hot = main === "INVERTER_TRIP" && panel !== null && panel >= HOT_PANEL_C;
+  return {
+    detail, main, mainCount: counts[main], days,
+    others: types.slice(1).map((t) => `${counts[t]} × ${fmt.fault(t)}`),
+    priority: SEVERITIES.find((level) => open.some((a) => a.severity === level)),
+    window: sameDay.length
+      ? `${clock(median(sameDay.map((a) => minutesOf(a.start))))}–${clock(median(sameDay.map((a) => minutesOf(a.end))))}` : null,
+    sky: Object.keys(skies).sort((x, y) => skies[y] - skies[x])[0],
+    panel,
+    aiAgrees: judged.filter((a) => a.ai_agrees).length, aiJudged: judged.length,
+    last: alerts.reduce((latest, a) => (a.start > latest ? a.start : latest), ""),
+    checks: [...(hot ? [`Its trips happen with panels around ${fmt.number(panel)} °C: also check the cooling fans and vents`] : []),
+      ...(JOB_CHECKS[main] || [])],
+    perMonth: (lost / days) * 30,
+  };
 }
 
-function renderPrChart(detail) {
-  const days = detail.daily_history;
-  const trend = detail.pr_trend ? Object.fromEntries(detail.pr_trend.points.map((p) => [p.date, p.performance_ratio])) : {};
-  const selected = days.map((d) => d.date === detail.date);
-  const lowDays = days.filter((d) => prStatus(d.performance_ratio) === "bad").length;
-  document.getElementById("pr-title").textContent = `${lowDays} of ${days.length} days below ${fmt.pct(PR_WARN)} of expected`;
-  Charts.draw("pr-chart", {
-    type: "line",
-    data: {
-      labels: days.map((d) => fmt.date(d.date).slice(0, 6)),
-      datasets: [
-        { label: "Daily actual vs expected (%)", data: days.map((d) => (d.performance_ratio === null ? null : d.performance_ratio * 100)),
-          borderColor: Charts.color("--chart-actual"), backgroundColor: Charts.color("--chart-actual"), borderWidth: 2,
-          pointRadius: days.map((d, i) => (selected[i] ? 5 : 2)) },
-        { label: "Trend line", data: days.map((d) => (trend[d.date] === undefined ? null : trend[d.date] * 100)),
-          borderColor: Charts.color("--chart-expected"), backgroundColor: Charts.color("--chart-expected"),
-          borderDash: [6, 4], borderWidth: 2, pointRadius: 0 },
-        { label: "Unusual day (hint)", data: days.map((d) => (d.is_unusual ? d.performance_ratio * 100 : null)),
-          showLine: false, backgroundColor: "#a855f7", borderColor: "#a855f7", pointRadius: 5 },
-      ],
-    },
-    options: {
-      scales: { x: Charts.axis("Day"), y: Charts.axis("Actual ÷ expected (%)", { suggestedMin: 0, suggestedMax: 110 }) },
-      plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${fmt.number(ctx.parsed.y, 1)}%` } } },
-    },
-  });
+/** Plain-text version of the work order (for Copy and WhatsApp). */
+function jobText(job) {
+  const d = job.detail;
+  const when = job.window
+    ? [`When: usually ${job.window}${job.sky ? `, ${job.sky.toLowerCase()} sky` : ""}${job.panel !== null ? `, panels ~${fmt.number(job.panel)} °C` : ""}`]
+    : [];
+  return [`MAINTENANCE WORK ORDER · Plant ${d.plant} · Inverter ${d.inverter}`, `Priority: ${job.priority || "none (all alerts resolved)"}`,
+    `Problem: ${fmt.fault(job.main)} (${job.mainCount} times in ${job.days} days)${job.others.length ? `; also ${job.others.join(", ")}` : ""}`,
+    ...when, `Last seen: ${fmt.date(job.last)}`, "Checks:", ...job.checks.map((c) => `[ ] ${c}`),
+    `Worth fixing: about ${fmt.inr(job.perMonth)} per month`, `Details: ${location.href}`].join("\n");
+}
+
+function renderJobCard(detail) {
+  const box = document.getElementById("job-card");
+  if (!detail.alerts.length) {
+    box.className = "card job-card ok";
+    box.innerHTML = `<div class="job-head"><h2>Maintenance Work Order</h2><span class="status Resolved">No work needed</span></div>
+      <p class="job-none">No faults found on this inverter in ${fmt.number(detail.daily_history.length)} days ✔</p>`;
+    return;
+  }
+  const job = buildJob(detail);
+  box.className = `card job-card${job.priority ? "" : " ok"}`;
+  box.innerHTML = `
+    <div class="job-head">
+      <h2>Maintenance Work Order</h2>
+      ${job.priority ? `<span class="job-priority">Priority ${severityBadge(job.priority)}</span>` : `<span class="status Resolved">All alerts resolved</span>`}
+    </div>
+    <p class="card-sub">Issued for the field service team · covers the whole period (${fmt.number(job.days)} days)</p>
+    <dl class="job-facts">
+      <dt>Problem</dt><dd><strong>${fmt.fault(job.main)}</strong>: ${fmt.number(job.mainCount)} times in ${fmt.number(job.days)} days${
+        job.others.length ? `<span class="muted"> · also ${job.others.join(", ")}</span>` : ""}</dd>
+      ${job.window ? `<dt>When</dt><dd>Usually <strong>${job.window}</strong>${job.sky ? ` · mostly ${skyChip(job.sky)}` : ""}${
+        job.panel !== null ? ` · panels ~${fmt.number(job.panel)} °C` : ""}</dd>` : ""}
+      <dt>Evidence</dt><dd>${job.aiJudged ? `AI classifier agrees on <strong>${job.aiAgrees} of ${job.aiJudged}</strong> alerts · ` : ""}last seen ${fmt.date(job.last)}</dd>
+    </dl>
+    <div class="job-checks">
+      <div class="kpi-label">Checks</div>
+      ${job.checks.map((c) => `<label><input type="checkbox"> ${escapeHTML(c)}</label>`).join("")}
+    </div>
+    <div class="job-worth">Worth fixing: about <strong>${fmt.inr(job.perMonth)} per month</strong>
+      ${infoTip(`Money this inverter lost to faults over ${job.days} days, scaled to 30 days (${TARIFF_LABEL}).`)}</div>
+    <div class="job-buttons">
+      <button type="button" id="job-print">Print</button>
+      <button type="button" id="job-copy">Copy</button>
+      <a class="btn-whatsapp" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(jobText(job))}">Share on WhatsApp</a>
+    </div>`;
+  document.getElementById("job-print").onclick = () => {
+    document.body.classList.add("print-job");
+    window.print();
+    document.body.classList.remove("print-job");
+  };
+  document.getElementById("job-copy").onclick = async (event) => {
+    const button = event.currentTarget;
+    try {
+      await navigator.clipboard.writeText(jobText(job));
+      button.textContent = "Copied ✔";
+    } catch {
+      button.textContent = "Copy failed";
+    }
+    setTimeout(() => { button.textContent = "Copy"; }, 2000);
+  };
 }
 
 function renderAlertList(detail) {
@@ -185,10 +218,5 @@ function renderAlertList(detail) {
     </a></li>`).join("");
 }
 
-window.addEventListener("themechange", () => {
-  if (!lastInverterData) return;
-  renderInverter(lastInverterData);
-  const sun = sunlightCache[lastInverterData.inverter];
-  if (sun) renderSunlightChart(sun, lastInverterData.date);
-});
+window.addEventListener("themechange", () => { if (lastInverterData) renderInverter(lastInverterData); });
 Layout.init("inverter", loadInverterPage);

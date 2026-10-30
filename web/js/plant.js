@@ -107,7 +107,6 @@ function renderWorst(state, losses) {
       <td class="num">${fmt.inr(row.fault_loss_inr)}</td>
       <td class="num">${row.alerts}</td>
     </tr>`).join("") || `<tr><td colspan="5" class="empty">No losses recorded</td></tr>`;
-  document.getElementById("tariff-note").innerHTML = `₹ values: ${escapeHTML(losses.tariff_note)}`;
 }
 
 window.addEventListener("themechange", () => { if (lastPlantData) renderPlant(lastPlantData); });

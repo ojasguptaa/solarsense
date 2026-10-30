@@ -85,13 +85,6 @@ const Layout = {
     Layout.showUser();
     Layout.setUpInstallButton();
     Layout.loadAssistant();
-    if (STATIC_SITE) {   // GitHub Pages copy: say clearly what visitors are looking at
-      const note = document.createElement("p");
-      note.className = "footer-note";
-      note.textContent = "Static demo copy: all results were precomputed by the SolarSense pipeline. "
-        + "Acknowledge / Resolve are saved only in this browser.";
-      document.querySelector(".page").appendChild(note);
-    }
 
     let info;
     try {

@@ -31,18 +31,9 @@
       <div class="chart-box"><canvas id="day-chart" aria-label="Inverter power chart"></canvas></div>
     </section>
 
-    <section class="card" style="margin-top: var(--gap)">
-      <h2 id="sun-title">Power vs sunlight</h2>
-      <p class="card-sub" id="sun-sub">Each dot is one 15-minute reading. The orange line is the power our AI model expects for that much sunlight. Dots on the line are healthy; dots far below it are lost energy.</p>
-      <div class="chart-box tall"><canvas id="sun-chart" aria-label="Power versus sunlight scatter chart"></canvas></div>
-    </section>
-
     <section class="grid grid-main">
-      <div class="card">
-        <h2 id="pr-title">Daily actual vs expected</h2>
-        <p class="card-sub">Actual ÷ expected energy per day <span class="info" tabindex="0" data-tip="Above 100% means the plant produced more than our model estimated." aria-label="Above 100% means the plant produced more than our model estimated.">i</span>, with a straight trend line. Purple dots = "unusual day" hint from the optional Isolation Forest check (not an alert).</p>
-        <div class="chart-box small"><canvas id="pr-chart" aria-label="Daily actual vs expected chart"></canvas></div>
-      </div>
+      <!-- Maintenance work order: ready to send for a field technician (whole period, not just this day) -->
+      <div id="job-card" class="card job-card"><div class="skeleton"></div></div>
       <div class="card">
         <h2 id="alerts-title">Alerts for this inverter</h2>
         <ul id="alert-list" class="list scroll"><li><div class="skeleton"></div></li></ul>
