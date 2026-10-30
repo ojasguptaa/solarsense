@@ -30,7 +30,13 @@
           <option value="Active">Open + Acknowledged</option><option value="">All statuses</option>
           <option value="Open">Open</option><option value="Acknowledged">Acknowledged</option><option value="Resolved">Resolved</option>
         </select>
-        <label class="check"><input type="checkbox" id="f-day"> Replay date only</label>
+        <select id="f-inverter" aria-label="Inverter filter"><option value="">All inverters</option></select>
+        <select id="f-when" aria-label="Date filter">
+          <option value="">All dates</option><option value="day">Replay date only</option><option value="custom">Custom dates…</option>
+        </select>
+        <span id="f-range" class="date-range" hidden>
+          <input type="date" id="f-from" aria-label="From date"> to <input type="date" id="f-to" aria-label="To date">
+        </span>
         <input type="search" id="f-search" placeholder="Search id, inverter or reason…" aria-label="Search alerts">
         <button id="export-csv" title="Download the filtered alerts as a CSV file">Export CSV</button>
       </div>

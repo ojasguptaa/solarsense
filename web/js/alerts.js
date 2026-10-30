@@ -28,17 +28,57 @@ function fillFilterOptions() {
   $("f-type").innerHTML += types.map((t) => `<option value="${t}">${fmt.fault(t)}</option>`).join("");
   $("f-plant").innerHTML += page.state.plants.map((p) => `<option value="${p}">Plant ${p}</option>`).join("");
   if (urlParams.get("plant")) $("f-plant").value = urlParams.get("plant");
+  // Custom dates: limited to the days we have data for, starting as the whole period.
+  const dates = page.state.dates;
+  ["f-from", "f-to"].forEach((id) => { $(id).min = dates[0]; $(id).max = dates[dates.length - 1]; });
+  $("f-from").value = dates[0];
+  $("f-to").value = dates[dates.length - 1];
+  fillInverterOptions();
+  if (urlParams.get("inverter")) $("f-inverter").value = urlParams.get("inverter");
+}
+
+/** Inverter dropdown: only the inverters of the chosen plant (all plants: every inverter, with its plant). */
+function fillInverterOptions() {
+  const plant = $("f-plant").value, keep = $("f-inverter").value;
+  const seen = new Map();
+  page.all.filter((a) => !plant || String(a.plant) === plant)
+    .forEach((a) => seen.set(`${a.plant}|${a.inverter}`, a));
+  const options = [...seen.values()]
+    .sort((x, y) => x.plant - y.plant || (x.inverter === "ALL") - (y.inverter === "ALL") || x.inverter.localeCompare(y.inverter))
+    .map((a) => {
+      const name = a.inverter === "ALL" ? "Whole plant" : a.inverter;
+      return `<option value="${escapeHTML(a.inverter)}">${plant ? "" : `Plant ${a.plant} · `}${escapeHTML(name)}</option>`;
+    });
+  $("f-inverter").innerHTML = `<option value="">All inverters</option>${options.join("")}`;
+  $("f-inverter").value = [...$("f-inverter").options].some((o) => o.value === keep) ? keep : "";
+}
+
+/** The day after a YYYY-MM-DD date (ranges include the whole "To" day). */
+function nextDay(day) {
+  const next = new Date(`${day}T00:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  return next.toISOString().slice(0, 10);
+}
+
+/** Does the alert fall inside the chosen dates? (any overlap counts) */
+function inChosenDates(a) {
+  const when = $("f-when").value;
+  if (when === "day") return alertOverlapsDay(a, page.state.date);
+  if (when !== "custom") return true;
+  let from = $("f-from").value || page.state.dates[0], to = $("f-to").value || page.state.dates[page.state.dates.length - 1];
+  if (from > to) [from, to] = [to, from];   // picked backwards: still works
+  return a.start < `${nextDay(to)}T00:00:00` && a.end > `${from}T00:00:00`;
 }
 
 /** Apply every filter, the search box and the chosen sort order. */
 function filteredAlerts() {
   const plant = $("f-plant").value, severity = $("f-severity").value, type = $("f-type").value;
-  const status = $("f-status").value, onlyDay = $("f-day").checked;
+  const status = $("f-status").value, inverter = $("f-inverter").value;
   const search = $("f-search").value.trim().toLowerCase();
   const rows = page.all.filter((a) =>
     (!plant || String(a.plant) === plant) && (!severity || a.severity === severity) && (!type || a.fault_type === type)
     && (!status || (status === "Active" ? a.status !== "Resolved" : a.status === status))
-    && (!onlyDay || alertOverlapsDay(a, page.state.date))
+    && (!inverter || a.inverter === inverter) && inChosenDates(a)
     && (!search || `${a.id} ${a.inverter} ${a.reason}`.toLowerCase().includes(search)));
   const impact = (a) => a.energy_loss_kwh + a.energy_at_risk_kwh;
   const sorters = {
@@ -94,8 +134,18 @@ function onStatusChanged(id, status) {
 }
 
 // ---------- Wire up the controls ----------
-["f-plant", "f-severity", "f-type", "f-status", "f-day"].forEach((id) =>
-  $(id).addEventListener("change", () => { page.shown = PAGE_SIZE; render(); }));
+["f-plant", "f-severity", "f-type", "f-status", "f-inverter", "f-when", "f-from", "f-to"].forEach((id) =>
+  $(id).addEventListener("change", () => {
+    if (id === "f-plant") fillInverterOptions();   // new plant: its own inverters first, then filter
+    page.shown = PAGE_SIZE;
+    render();
+  }));
+$("f-when").addEventListener("change", () => { $("f-range").hidden = $("f-when").value !== "custom"; });
+["f-from", "f-to"].forEach((id) => $(id).addEventListener("change", () => {   // dates picked backwards: swap the boxes
+  if ($("f-from").value && $("f-to").value && $("f-from").value > $("f-to").value) {
+    [$("f-from").value, $("f-to").value] = [$("f-to").value, $("f-from").value];
+  }
+}, { capture: true }));
 $("f-search").addEventListener("input", () => { page.shown = PAGE_SIZE; render(); });
 $("show-more").addEventListener("click", () => { page.shown += PAGE_SIZE; render(); });
 $("export-csv").addEventListener("click", exportCsv);
@@ -112,7 +162,7 @@ $("alert-rows").addEventListener("keydown", (event) => {
 
 Layout.init("alerts", (state) => {
   if (page.all.length) {   // top-bar plant/date changed: follow the plant, then re-filter
-    if (state.plant !== page.lastPlant) $("f-plant").value = String(state.plant);
+    if (state.plant !== page.lastPlant) { $("f-plant").value = String(state.plant); fillInverterOptions(); }
     page.lastPlant = state.plant;
     render();
     return;

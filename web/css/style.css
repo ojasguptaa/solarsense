@@ -175,6 +175,8 @@ th { color: var(--muted); font-size: 12px; font-weight: 600; }
 .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
 .toolbar input[type="search"] { flex: 1; min-width: 160px; }
 .toolbar label.check { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
+.date-range { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
+.date-range[hidden] { display: none; }
 .table-wrap { overflow-x: auto; }
 tr.clickable { cursor: pointer; }
 tr.clickable:hover td { background: var(--bg); }
