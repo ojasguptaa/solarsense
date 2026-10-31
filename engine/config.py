@@ -75,9 +75,8 @@ DAYLIGHT_IRRADIATION_THRESHOLD = 0.02
 NIGHT_HOURS = [20, 21, 22, 23, 0, 1, 2, 3, 4]
 
 # ASSUMPTION: electricity value used to convert lost energy (kWh) into rupees.
-# This is only a placeholder. Set it to a sourced value (e.g. a recent Indian
-# solar tariff) and record the source in reports/assumptions.md.
-# TODO(team): find and cite a source for this number.
+# Chosen between recent Indian solar tariffs: SECI solar + storage lowest bid ₹2.86/kWh (Oct 2025) and
+# SECI rooftop solar ₹3.34/kWh (Dec 2025). Sources are listed in engine/assumptions.py → reports/assumptions.md.
 TARIFF_INR_PER_KWH = 3.0
 
 # ---------------------------------------------------------------------------

@@ -1,1 +1,0 @@
-{"inputs": {"radiation_db": "PVGIS-ERA5", "meteo_db": "ERA5", "year_min": 2005, "year_max": 2020, "use_horizon": true, "horizon_db": "DEM-calculated"}, "totals": {"E_d": 3.83, "E_m": 116.49, "E_y": 1397.88, "H(i)_d": 5.37, "H(i)_m": 163.26, "H(i)_y": 1959.15, "SD_m": 1.86, "SD_y": 22.37, "l_aoi": -3.1, "l_spec": "0.12", "l_tg": -10.92, "l_total": -28.65}}

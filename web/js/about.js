@@ -1,5 +1,11 @@
 // About page: fills in the live assumptions list and the number of days from the API.
 
+/** Escape the text, then turn markdown links [title](https://…) from assumptions.md into real links. */
+function withLinks(text) {
+  return escapeHTML(text).replace(/\[([^\]]+)\]\((https:\/\/[^)\s]+)\)/g,
+    '<a href="$2" target="_blank" rel="noopener">$1</a>');
+}
+
 async function loadAbout(state) {
   try {
     const [assumptions, settings] = await Promise.all([fetchJSON("/api/assumptions"), fetchJSON("/api/settings")]);
@@ -9,7 +15,7 @@ async function loadAbout(state) {
         <td><strong>${escapeHTML(a.title)}</strong></td>
         <td style="white-space: nowrap">${escapeHTML(a.value)} ${escapeHTML(a.unit)}</td>
         <td>${escapeHTML(a.why)}</td>
-        <td class="muted">${escapeHTML(a.source)}</td>
+        <td class="muted">${withLinks(a.source)}</td>
       </tr>`).join("");
     document.getElementById("lim-small").textContent =
       `Small underperformance (output dropping by less than ${fmt.number(settings.underperformance_drop_pct)}% ` +

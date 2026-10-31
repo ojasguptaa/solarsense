@@ -16,8 +16,8 @@ from engine import config
 from engine.assumptions import record_assumption
 from engine.metrics import save_metrics_section
 
-TARIFF_NOTE = ("₹ values use an assumed tariff (ASSUMPTION — see About), configurable in engine/config.py, "
-               "until the team cites a source.")
+TARIFF_NOTE = ("₹ values use an assumed tariff (ASSUMPTION — see About) chosen between recent SECI auction "
+               "prices, configurable in engine/config.py.")
 
 
 def add_money_to_alerts(alerts):

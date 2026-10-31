@@ -15,7 +15,11 @@ TARIFF_ASSUMPTION = {
     "unit": "₹/kWh",
     "why": ("Assumed value, configurable as TARIFF_INR_PER_KWH in engine/config.py (re-run the pipeline after "
             "changing it). Shown on the website as \"assumed tariff — see About\"."),
-    "source": "TODO(team): cite our source for this tariff (e.g. a recent Indian solar tariff) here.",
+    "source": ("Rounded value between recent Indian solar tariffs: SECI 2 GW solar + 1 GW/4 GWh storage tender, "
+               "lowest bid ₹2.86/kWh ([Power Peak Digest, 17 Oct 2025](https://powerpeakdigest.com/seci-auction-"
+               "discovers-lowest-tariff-for-2-gw-solar-with-1-gw-4-gwh-storage/)) and SECI rooftop solar auction, "
+               "₹3.34–4.65/kWh ([Indian Infrastructure, 17 Dec 2025](https://indianinfrastructure.com/2025/12/17/"
+               "seci-announces-auction-results-for-6-25-mw-rooftop-solar-auction/))."),
 }
 
 

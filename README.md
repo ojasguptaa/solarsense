@@ -108,6 +108,12 @@ own browser, and the data is the version committed to the repository (re-run `py
 
 - Data: Kaggle "Solar Power Generation Data" by anikannal (two plants in India, 34 days in May–June 2020).
   The raw files are not stored in this repository. Plant locations (GPS) are not in the dataset.
-- Every assumption (e.g. the ₹/kWh tariff — **still to be sourced by the team**) is listed in
-  `reports/assumptions.md` and on the About page.
+  Licence on Kaggle: "Data files © Original Authors".
+- Every assumption is listed in `reports/assumptions.md` and on the About page. Example: the ₹3/kWh tariff
+  sits between recent SECI auction results (solar + storage ₹2.86/kWh, Oct 2025; rooftop solar ₹3.34/kWh,
+  Dec 2025); sources are linked there.
 - Results are reproducible: everything uses a fixed random seed (42).
+
+## Team Drona
+
+Aharshi K. Chakroborty (Team Leader), Ojas Gupta, Lakshya Soni, Aniket Verma.

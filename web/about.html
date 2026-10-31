@@ -113,7 +113,7 @@
       <summary><h2>Data sources and licences</h2></summary>
       <ul class="list">
         <li><strong>Kaggle — "Solar Power Generation Data"</strong> by anikannal: two solar plants in India, 15-minute readings, May–June 2020.
-          <div class="list-meta">Licence: see the dataset page on Kaggle. <em>TODO(team): confirm and write the exact licence here.</em> Plant locations (GPS) are not in the dataset.</div></li>
+          <div class="list-meta">Licence on Kaggle: "Data files © Original Authors". Plant locations (GPS) are not in the dataset.</div></li>
         <li><strong>Chart.js</strong>: charts on this website (MIT licence).</li>
         <li><strong>Three.js</strong>: the 3D plant view on the Overview page (MIT licence).</li>
         <li><strong>Python libraries</strong>: pandas, NumPy, scikit-learn, FastAPI and others (open-source).</li>
@@ -130,7 +130,7 @@
         <li>No cloud sensor and no GPS: the sky (clear → overcast) is read from the sunlight against a clear-sky curve learned from the brightest days — an estimate, not a measurement. The temperature effect is measured from our data; for Plant 2 it is weak evidence.</li>
         <li>No official fault labels exist, so we validated with faults we planted ourselves (results in reports/metrics.json → validation).</li>
         <li>Plant 1's DC power was rescaled because the raw values were physically impossible (see assumptions below).</li>
-        <li>The ₹ figures use an assumed tariff (configurable) until the team cites a sourced one — see Assumptions below.</li>
+        <li>The ₹ figures use an assumed tariff of ₹3/kWh (configurable), chosen between recent SECI auction prices — sources in Assumptions below.</li>
         <li id="lim-small">Small underperformance is usually not caught, by design, to avoid false alarms.</li>
       </ul>
     </details>
